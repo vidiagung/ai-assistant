@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createStreamingResponse, DEFAULT_SYSTEM_PROMPT } from '@/lib/anthropic'
+import { createStreamingResponse, DEFAULT_SYSTEM_PROMPT } from '@/lib/gemini'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,13 +31,12 @@ export async function POST( req: NextRequest ) {
 			conversation = await prisma.conversation.create( {
 				data: {
 					title: message.slice( 0, 60 ) + ( message.length > 60 ? '...' : '' ),
-					model: model ?? 'claude-sonnet-4-20250514',
+					model: model ?? 'gemini-2.5-flash',
 					systemPrompt: systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
 				},
 			} )
 		}
 
-		// Save user message
 		const userMessage = await prisma.message.create( {
 			data: {
 				conversationId: conversation.id,
@@ -46,7 +45,6 @@ export async function POST( req: NextRequest ) {
 			},
 		} )
 
-		// Build history
 		const history: { role: 'user' | 'assistant'; content: string }[] = [
 			...prevMessages.map( ( m ) => ( {
 				role: m.role as 'user' | 'assistant',
@@ -61,7 +59,6 @@ export async function POST( req: NextRequest ) {
 		} )
 
 		const encoder = new TextEncoder()
-		let assistantContent = ''
 		const convId = conversation.id
 
 		const readableStream = new ReadableStream( {
@@ -72,38 +69,40 @@ export async function POST( req: NextRequest ) {
 					)
 				)
 
-				stream.on( 'text', ( text ) => {
-					assistantContent += text
-					controller.enqueue(
-						encoder.encode( `data: ${JSON.stringify( { type: 'text', text } )}\n\n` )
-					)
-				} )
+				let assistantContent = ''
 
-				stream.on( 'message', async ( msg ) => {
+				try {
+					for await ( const chunk of stream as AsyncIterable<{ text: () => string }> ) {
+						const text = chunk.text()
+						if ( text ) {
+							assistantContent += text
+							controller.enqueue(
+								encoder.encode( `data: ${JSON.stringify( { type: 'text', text } )}\n\n` )
+							)
+						}
+					}
+
 					const assistantMsg = await prisma.message.create( {
 						data: {
 							conversationId: convId,
 							role: 'assistant',
 							content: assistantContent,
-							inputTokens: msg.usage.input_tokens,
-							outputTokens: msg.usage.output_tokens,
 						},
 					} )
 
 					controller.enqueue(
 						encoder.encode(
-							`data: ${JSON.stringify( { type: 'done', messageId: assistantMsg.id, inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens } )}\n\n`
+							`data: ${JSON.stringify( { type: 'done', messageId: assistantMsg.id } )}\n\n`
 						)
 					)
-					controller.close()
-				} )
-
-				stream.on( 'error', ( err ) => {
+				} catch ( err ) {
+					const error = err as Error
 					controller.enqueue(
-						encoder.encode( `data: ${JSON.stringify( { type: 'error', error: err.message } )}\n\n` )
+						encoder.encode( `data: ${JSON.stringify( { type: 'error', error: error.message } )}\n\n` )
 					)
+				} finally {
 					controller.close()
-				} )
+				}
 			},
 		} )
 

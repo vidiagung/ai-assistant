@@ -108,18 +108,37 @@ export default function ChatPage() {
 				body: JSON.stringify( { message: userText, conversationId: activeConvId } ),
 			} )
 
-			const reader = res.body!.getReader()
+			if ( !res.ok || !res.body ) {
+				console.error( 'Response error:', res.status )
+				return
+			}
+
+			const reader = res.body.getReader()
 			const decoder = new TextDecoder()
 			let accumulated = ''
+			let buffer = ''
 
 			while ( true ) {
 				const { done, value } = await reader.read()
 				if ( done ) break
 
-				const lines = decoder.decode( value ).split( '\n' )
+				buffer += decoder.decode( value, { stream: true } )
+
+				const lines = buffer.split( '\n' )
+				buffer = lines.pop() ?? ''
+
 				for ( const line of lines ) {
-					if ( !line.startsWith( 'data: ' ) ) continue
-					const json = JSON.parse( line.slice( 6 ) )
+					const trimmed = line.trim()
+					if ( !trimmed.startsWith( 'data: ' ) ) continue
+
+					let json
+					try {
+						json = JSON.parse( trimmed.slice( 6 ) )
+					} catch {
+						continue
+					}
+
+					console.log( 'event:', json )
 
 					if ( json.type === 'init' ) {
 						setActiveConvId( json.conversationId )
@@ -141,11 +160,13 @@ export default function ChatPage() {
 						] )
 						setStreamingContent( '' )
 						fetchConversations()
+					} else if ( json.type === 'error' ) {
+						console.error( 'Stream error:', json.error )
 					}
 				}
 			}
 		} catch ( err ) {
-			console.error( err )
+			console.error( 'sendMessage error:', err )
 		} finally {
 			setIsStreaming( false )
 		}
@@ -275,6 +296,22 @@ export default function ChatPage() {
 									<div className="max-w-2xl px-4 py-3 rounded-2xl rounded-bl-sm text-sm leading-relaxed bg-muted text-foreground">
 										<pre className="whitespace-pre-wrap font-sans">{streamingContent}</pre>
 										<span className="inline-block w-1.5 h-4 bg-primary ml-1 animate-pulse rounded-sm" />
+									</div>
+								</div>
+							)}
+
+							{/* Loading indicator when streaming but no content yet */}
+							{isStreaming && !streamingContent && (
+								<div className="flex gap-3 justify-start">
+									<div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 mt-1">
+										<Bot className="w-4 h-4 text-primary-foreground" />
+									</div>
+									<div className="max-w-2xl px-4 py-3 rounded-2xl rounded-bl-sm text-sm leading-relaxed bg-muted text-foreground">
+										<span className="inline-flex gap-1">
+											<span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+											<span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+											<span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+										</span>
 									</div>
 								</div>
 							)}
