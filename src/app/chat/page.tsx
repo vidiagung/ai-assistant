@@ -26,10 +26,10 @@ import {
 	useSidebar,
 } from '@/components/ui/sidebar'
 import {
-	Trash2, Plus, Sparkles, MessageSquare,
-	Zap, Search, Copy , FolderOpen, Code2,
+	Trash2, Plus, MessageSquare,
+	Zap, Search, Copy , Code2,
 	Download, ChevronsUpDown, Mic, AudioWaveform,
-	SquarePen 
+	SquarePen, FolderPlus, LogIn
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -143,13 +143,21 @@ function InputBar( {
 
 /* ── App sidebar ── */
 function AppSidebar( {
-	conversations, activeConvId, onNew, onLoad, onDelete,
+	conversations,
+	activeConvId,
+	onNew,
+	onLoad,
+	onDelete,
+	isLoggedIn,
+	setShowLogin,
 }: {
 	conversations: Conversation[]
-	activeConvId: string | null
-	onNew: () => void
-	onLoad: ( id: string ) => void
-	onDelete: ( id: string ) => void
+  	activeConvId: string | null
+ 	onNew: () => void
+  	onLoad: ( id: string ) => void
+  	onDelete: ( id: string ) => void
+  	isLoggedIn: boolean
+  	setShowLogin: ( v: boolean ) => void
 } ) {
 	const { state } = useSidebar()
 	const isCollapsed = state === 'collapsed'
@@ -187,17 +195,22 @@ function AppSidebar( {
 							<Copy className="w-4 h-4" /><span>Images</span>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton tooltip="Customize">
+							<Code2 className="w-4 h-4" /><span>Codex</span>
+							<Badge variant="outline" className="ml-auto text-[9px] h-4 px-1.5 group-data-[collapsible=icon]:hidden">Upgrade</Badge>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
 				</SidebarMenu>
 			</SidebarHeader>
 
 			<SidebarContent className="bg-[#1a1a1a]">
 				<SidebarGroup>
+					<SidebarGroupLabel>Projects</SidebarGroupLabel>  {/* ← tambah ini */}
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{[
-								{ icon: MessageSquare, label: 'Chats' },
-								{ icon: FolderOpen, label: 'Projects' },
-								{ icon: Sparkles, label: 'Artifacts' },
+								{ icon: FolderPlus, label: 'New Projects' },
 							].map( ( item ) => (
 								<SidebarMenuItem key={item.label}>
 									<SidebarMenuButton tooltip={item.label}>
@@ -205,18 +218,12 @@ function AppSidebar( {
 									</SidebarMenuButton>
 								</SidebarMenuItem>
 							) )}
-							<SidebarMenuItem>
-								<SidebarMenuButton tooltip="Code">
-									<Code2 className="w-4 h-4" /><span>Code</span>
-									<Badge variant="outline" className="ml-auto text-[9px] h-4 px-1.5 group-data-[collapsible=icon]:hidden">Upgrade</Badge>
-								</SidebarMenuButton>
-							</SidebarMenuItem>
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
 
 				<SidebarGroup className="flex-1">
-					<SidebarGroupLabel>Recent chats</SidebarGroupLabel>
+					<SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
 					<SidebarGroupContent>
 						{conversations.length === 0 ? (
 							<p className="text-xs text-sidebar-foreground/40 text-center py-6 px-4 leading-relaxed group-data-[collapsible=icon]:hidden">
@@ -248,33 +255,51 @@ function AppSidebar( {
 				</SidebarGroup>
 			</SidebarContent>
 
-			<SidebarFooter className="bg-[#1a1a1a] border-t border-white/8">
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" tooltip="Kyoshiro Commander" className="h-auto py-2">
-							<div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 text-xs font-bold text-white shadow-sm">
-								KC
-							</div>
-							<div className="flex-1 min-w-0 text-left">
-								<p className="text-xs font-medium text-sidebar-foreground truncate leading-snug">Kyoshiro Commander</p>
-								<p className="text-[10px] text-sidebar-foreground/50 leading-snug">Free plan</p>
-							</div>
-							<div className="flex items-center gap-0.5 shrink-0">
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<div className="w-6 h-6 flex items-center justify-center rounded-md text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-											<Download className="w-3 h-3" />
-										</div>
-									</TooltipTrigger>
-									<TooltipContent side="top" className="text-xs">Download app</TooltipContent>
-								</Tooltip>
-								<div className="w-6 h-6 flex items-center justify-center rounded-md text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-									<ChevronsUpDown className="w-3 h-3" />
+			<SidebarFooter className="bg-[#1a1a1a] border-white/8">
+				{isLoggedIn ? (
+					<SidebarMenu>
+						<SidebarMenuItem>
+							<SidebarMenuButton size="lg" tooltip="Kyoshiro Commander" className="h-auto py-2">
+								<div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 text-xs font-bold text-white shadow-sm">
+									KC
 								</div>
-							</div>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
+								<div className="flex-1 min-w-0 text-left">
+									<p className="text-xs font-medium text-sidebar-foreground truncate leading-snug">Kyoshiro Commander</p>
+									<p className="text-[10px] text-sidebar-foreground/50 leading-snug">Free plan</p>
+								</div>
+								<div className="flex items-center gap-0.5 shrink-0">
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<div className="w-6 h-6 flex items-center justify-center rounded-md text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+												<Download className="w-3 h-3" />
+											</div>
+										</TooltipTrigger>
+										<TooltipContent side="top" className="text-xs">Download app</TooltipContent>
+									</Tooltip>
+									<div className="w-6 h-6 flex items-center justify-center rounded-md text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+										<ChevronsUpDown className="w-3 h-3" />
+									</div>
+								</div>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					</SidebarMenu>
+				) : (
+					<div className="px-3 py-3 space-y-3 group-data-[collapsible=icon]:hidden">
+						<div>
+							<p className="text-xs font-semibold text-zinc-200 leading-snug mb-1">Get responses tailored to you</p>
+							<p className="text-[11px] text-zinc-500 leading-relaxed">
+								Log in to get answers based on saved chats, plus create images and upload files.
+							</p>
+						</div>
+						<button
+							onClick={() => setShowLogin( true )}
+							className="w-full h-9 rounded-full bg-[#3a3a3a] hover:bg-[#444] text-zinc-100 text-sm font-medium transition-colors border border-white/10 flex items-center justify-center gap-2"
+						>
+							Log In
+							<LogIn className="w-4 h-4" />
+						</button>
+					</div>
+				)}
 			</SidebarFooter>
 		</Sidebar>
 	)
@@ -391,6 +416,8 @@ export default function ChatPage() {
 	const [mounted, setMounted] = useState( false )
 	const messagesEndRef = useRef<HTMLDivElement>( null )
 	const textareaRef = useRef<HTMLTextAreaElement>( null )
+	const [isLoggedIn, setIsLoggedIn] = useState( false )
+	const [showLogin, setShowLogin] = useState( false )
 
 	useEffect( () => { setMounted( true ) }, [] )
 	useEffect( () => { fetchConversations() }, [] )
@@ -490,6 +517,8 @@ export default function ChatPage() {
 						onNew={newConversation}
 						onLoad={loadConversation}
 						onDelete={deleteConversation}
+						isLoggedIn={isLoggedIn}
+						setShowLogin={setShowLogin}
 					/>
 					<ChatArea
 						conversations={conversations}
@@ -506,6 +535,25 @@ export default function ChatPage() {
 						mounted={mounted}
 					/>
 				</div>
+
+				{showLogin && (
+					<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+						<div className="bg-white text-black p-6 rounded-xl w-75">
+							<p className="mb-4 font-medium">Login dulu</p>
+
+							<button
+								onClick={() => {
+									setIsLoggedIn( true )
+									setShowLogin( false )
+								}}
+								className="w-full px-4 py-2 bg-black text-white rounded"
+							>
+              Login
+							</button>
+						</div>
+					</div>
+				)}
+
 			</SidebarProvider>
 		</TooltipProvider>
 	)
