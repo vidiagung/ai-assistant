@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { PromptInputBox } from '@/components/comp/ai-prompt-box'
 import {
 	Tooltip,
 	TooltipContent,
@@ -26,10 +27,10 @@ import {
 	useSidebar,
 } from '@/components/ui/sidebar'
 import {
-	Trash2, Plus, MessageSquare,
-	Zap, Search, Copy , Code2,
-	Download, ChevronsUpDown, Mic, AudioWaveform,
-	SquarePen, FolderPlus, LogIn
+	Trash2, MessageSquare,
+	Zap, Search, Copy, Code2,
+	Download, ChevronsUpDown,
+	SquarePen, FolderPlus, LogIn,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -55,8 +56,11 @@ function TypingDots() {
 	return (
 		<span className="inline-flex items-center gap-1 px-1">
 			{[0, 150, 300].map( ( delay, i ) => (
-				<span key={i} className="w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
-					style={{ animationDelay: `${delay}ms`, animationDuration: '1s' }} />
+				<span
+					key={i}
+					className="w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
+					style={{ animationDelay: `${delay}ms`, animationDuration: '1s' }}
+				/>
 			) )}
 		</span>
 	)
@@ -94,53 +98,6 @@ function MessageBubble( { msg }: { msg: Message } ) {
 	)
 }
 
-/* ── Input bar (reusable) ── */
-function InputBar( {
-	textareaRef, input, setInput, isStreaming, mounted, sendMessage, handleKeyDown,
-}: {
-	textareaRef: React.RefObject<HTMLTextAreaElement | null>
-	input: string
-	setInput: ( v: string ) => void
-	isStreaming: boolean
-	mounted: boolean
-	sendMessage: () => void
-	handleKeyDown: ( e: React.KeyboardEvent<HTMLTextAreaElement> ) => void
-} ) {
-	return (
-		<div className="flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 shadow-lg">
-			<button className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/8 transition-colors shrink-0">
-				<Plus className="w-5 h-5" />
-			</button>
-			<textarea
-				ref={textareaRef}
-				value={input}
-				onChange={( e ) => setInput( e.target.value )}
-				onKeyDown={handleKeyDown}
-				placeholder="Ask anything"
-				rows={1}
-				disabled={isStreaming}
-				className="flex-1 resize-none bg-transparent outline-none border-none ring-0 text-base py-2 px-0 min-h-10 max-h-36 text-white placeholder:text-zinc-500"
-			/>
-			<button className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/8 transition-colors shrink-0">
-				<Mic className="w-5 h-5" />
-			</button>
-			<button
-				onClick={sendMessage}
-				disabled={!mounted || isStreaming || !input.trim()}
-				suppressHydrationWarning
-				className={cn(
-					'w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-all duration-150',
-					input.trim() && !isStreaming
-						? 'bg-white text-black hover:bg-zinc-200 shadow'
-						: 'bg-white/20 text-zinc-500 cursor-not-allowed'
-				)}
-			>
-				<AudioWaveform className="w-5 h-5" />
-			</button>
-		</div>
-	)
-}
-
 /* ── App sidebar ── */
 function AppSidebar( {
 	conversations,
@@ -152,12 +109,12 @@ function AppSidebar( {
 	setShowLogin,
 }: {
 	conversations: Conversation[]
-  	activeConvId: string | null
- 	onNew: () => void
-  	onLoad: ( id: string ) => void
-  	onDelete: ( id: string ) => void
-  	isLoggedIn: boolean
-  	setShowLogin: ( v: boolean ) => void
+	activeConvId: string | null
+	onNew: () => void
+	onLoad: ( id: string ) => void
+	onDelete: ( id: string ) => void
+	isLoggedIn: boolean
+	setShowLogin: ( v: boolean ) => void
 } ) {
 	const { state } = useSidebar()
 	const isCollapsed = state === 'collapsed'
@@ -182,7 +139,7 @@ function AppSidebar( {
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton onClick={onNew} tooltip="New chat">
-							<SquarePen  className="w-4 h-4" /><span>New chat</span>
+							<SquarePen className="w-4 h-4" /><span>New chat</span>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 					<SidebarMenuItem>
@@ -191,14 +148,16 @@ function AppSidebar( {
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 					<SidebarMenuItem>
-						<SidebarMenuButton tooltip="Customize">
+						<SidebarMenuButton tooltip="Images">
 							<Copy className="w-4 h-4" /><span>Images</span>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 					<SidebarMenuItem>
-						<SidebarMenuButton tooltip="Customize">
+						<SidebarMenuButton tooltip="Codex">
 							<Code2 className="w-4 h-4" /><span>Codex</span>
-							<Badge variant="outline" className="ml-auto text-[9px] h-4 px-1.5 group-data-[collapsible=icon]:hidden">Upgrade</Badge>
+							<Badge variant="outline" className="ml-auto text-[9px] h-4 px-1.5 group-data-[collapsible=icon]:hidden">
+								Upgrade
+							</Badge>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 				</SidebarMenu>
@@ -206,18 +165,14 @@ function AppSidebar( {
 
 			<SidebarContent className="bg-[#1a1a1a]">
 				<SidebarGroup>
-					<SidebarGroupLabel>Projects</SidebarGroupLabel>  {/* ← tambah ini */}
+					<SidebarGroupLabel>Projects</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{[
-								{ icon: FolderPlus, label: 'New Projects' },
-							].map( ( item ) => (
-								<SidebarMenuItem key={item.label}>
-									<SidebarMenuButton tooltip={item.label}>
-										<item.icon className="w-4 h-4" /><span>{item.label}</span>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							) )}
+							<SidebarMenuItem>
+								<SidebarMenuButton tooltip="New Projects">
+									<FolderPlus className="w-4 h-4" /><span>New Projects</span>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
@@ -307,22 +262,21 @@ function AppSidebar( {
 
 /* ── Main chat area ── */
 function ChatArea( {
-	conversations, activeConvId, messages, input, setInput,
-	isStreaming, streamingContent, messagesEndRef, textareaRef,
-	sendMessage, handleKeyDown, mounted,
+	conversations,
+	activeConvId,
+	messages,
+	isStreaming,
+	streamingContent,
+	messagesEndRef,
+	onSend,
 }: {
 	conversations: Conversation[]
 	activeConvId: string | null
 	messages: Message[]
-	input: string
-	setInput: ( v: string ) => void
 	isStreaming: boolean
 	streamingContent: string
 	messagesEndRef: React.RefObject<HTMLDivElement | null>
-	textareaRef: React.RefObject<HTMLTextAreaElement | null>
-	sendMessage: () => void
-	handleKeyDown: ( e: React.KeyboardEvent<HTMLTextAreaElement> ) => void
-	mounted: boolean
+	onSend: ( message: string, files?: File[] ) => void
 } ) {
 	const activeConv = conversations.find( ( c ) => c.id === activeConvId )
 
@@ -336,27 +290,31 @@ function ChatArea( {
 				}
 			</header>
 
-			{/* Messages / Empty */}
+			{/* Messages / Empty state */}
 			<ScrollArea className="flex-1">
 				<div className="max-w-3xl mx-auto px-6 py-6">
 					{messages.length === 0 && !isStreaming ? (
+
+						/* ── Tampilan awal: prompt box di tengah ── */
 						<div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] gap-10 select-none">
 							<h1 className="text-[2rem] font-semibold tracking-tight text-foreground">
 								What&apos;s on your mind today?
 							</h1>
 							<div className="w-full max-w-2xl">
-								<InputBar
-									textareaRef={textareaRef}
-									input={input}
-									setInput={setInput}
-									isStreaming={isStreaming}
-									mounted={mounted}
-									sendMessage={sendMessage}
-									handleKeyDown={handleKeyDown}
+								<PromptInputBox
+									onSend={onSend}
+									isLoading={isStreaming}
+									placeholder="Ask anything"
 								/>
 							</div>
+							<p className="text-[10px] text-zinc-700 -mt-6">
+								Enter kirim · Shift+Enter baris baru
+							</p>
 						</div>
+
 					) : (
+
+						/* ── Daftar pesan ── */
 						<div className="space-y-5">
 							{messages.map( ( msg ) => <MessageBubble key={msg.id} msg={msg} /> )}
 							{isStreaming && (
@@ -378,27 +336,24 @@ function ChatArea( {
 							)}
 							<div ref={messagesEndRef} />
 						</div>
+
 					)}
 				</div>
 			</ScrollArea>
 
-			{/* Bottom input — only when chatting */}
+			{/* ── Input bar bawah (muncul setelah ada pesan) ── */}
 			{( messages.length > 0 || isStreaming ) && (
-				<div className="w-full flex justify-center px-6 pb-5 pt-3 shrink-0">
+				<div className="w-full flex flex-col items-center px-6 pb-5 pt-3 shrink-0 gap-2">
 					<div className="w-full max-w-2xl">
-						<InputBar
-							textareaRef={textareaRef}
-							input={input}
-							setInput={setInput}
-							isStreaming={isStreaming}
-							mounted={mounted}
-							sendMessage={sendMessage}
-							handleKeyDown={handleKeyDown}
+						<PromptInputBox
+							onSend={onSend}
+							isLoading={isStreaming}
+							placeholder="Ask anything"
 						/>
-						<p className="text-[10px] text-zinc-700 text-center mt-2">
-							Enter kirim · Shift+Enter baris baru
-						</p>
 					</div>
+					<p className="text-[10px] text-zinc-700">
+						Enter kirim · Shift+Enter baris baru
+					</p>
 				</div>
 			)}
 		</main>
@@ -408,26 +363,18 @@ function ChatArea( {
 /* ── Root ── */
 export default function ChatPage() {
 	const [conversations, setConversations] = useState<Conversation[]>( [] )
-	const [activeConvId, setActiveConvId] = useState<string | null>( null )
-	const [messages, setMessages] = useState<Message[]>( [] )
-	const [input, setInput] = useState( '' )
-	const [isStreaming, setIsStreaming] = useState( false )
+	const [activeConvId, setActiveConvId]   = useState<string | null>( null )
+	const [messages, setMessages]           = useState<Message[]>( [] )
+	const [isStreaming, setIsStreaming]      = useState( false )
 	const [streamingContent, setStreamingContent] = useState( '' )
-	const [mounted, setMounted] = useState( false )
 	const messagesEndRef = useRef<HTMLDivElement>( null )
-	const textareaRef = useRef<HTMLTextAreaElement>( null )
 	const [isLoggedIn, setIsLoggedIn] = useState( false )
-	const [showLogin, setShowLogin] = useState( false )
+	const [showLogin, setShowLogin]   = useState( false )
 
-	useEffect( () => { setMounted( true ) }, [] )
 	useEffect( () => { fetchConversations() }, [] )
-	useEffect( () => { messagesEndRef.current?.scrollIntoView( { behavior: 'smooth' } ) }, [messages, streamingContent] )
 	useEffect( () => {
-		const el = textareaRef.current
-		if ( !el ) return
-		el.style.height = 'auto'
-		el.style.height = Math.min( el.scrollHeight, 160 ) + 'px'
-	}, [input] )
+		messagesEndRef.current?.scrollIntoView( { behavior: 'smooth' } )
+	}, [messages, streamingContent] )
 	useEffect( () => {
 		document.documentElement.classList.add( 'dark' )
 	}, [] )
@@ -450,7 +397,10 @@ export default function ChatPage() {
 		} catch ( err ) { console.error( err ) }
 	}
 
-	function newConversation() { setActiveConvId( null ); setMessages( [] ); setInput( '' ) }
+	function newConversation() {
+		setActiveConvId( null )
+		setMessages( [] )
+	}
 
 	async function deleteConversation( id: string ) {
 		await fetch( `/api/chat/${id}`, { method: 'DELETE' } )
@@ -458,11 +408,15 @@ export default function ChatPage() {
 		fetchConversations()
 	}
 
-	async function sendMessage() {
-		if ( !input.trim() || isStreaming ) return
-		const userText = input.trim()
-		setInput( '' ); setIsStreaming( true ); setStreamingContent( '' )
-		setMessages( ( prev ) => [...prev, { id: `temp-${Date.now()}`, role: 'user', content: userText, createdAt: new Date() }] )
+	/* ── Fungsi ini dipanggil oleh PromptInputBox via prop onSend ── */
+	async function handleSend( userText: string ) {
+		if ( !userText.trim() || isStreaming ) return
+		setIsStreaming( true )
+		setStreamingContent( '' )
+		setMessages( prev => [
+			...prev,
+			{ id: `temp-${Date.now()}`, role: 'user', content: userText, createdAt: new Date() },
+		] )
 
 		try {
 			const res = await fetch( '/api/chat', {
@@ -472,7 +426,7 @@ export default function ChatPage() {
 			} )
 			if ( !res.ok || !res.body ) return
 
-			const reader = res.body.getReader()
+			const reader  = res.body.getReader()
 			const decoder = new TextDecoder()
 			let accumulated = '', buffer = ''
 
@@ -488,23 +442,31 @@ export default function ChatPage() {
 					if ( !trimmed.startsWith( 'data: ' ) ) continue
 					let json; try { json = JSON.parse( trimmed.slice( 6 ) ) } catch { continue }
 
-					if ( json.type === 'init' ) { setActiveConvId( json.conversationId ); fetchConversations() }
-					else if ( json.type === 'text' ) { accumulated += json.text; setStreamingContent( accumulated ) }
-					else if ( json.type === 'done' ) {
-						setMessages( ( prev ) => [...prev, {
-							id: json.messageId, role: 'assistant', content: accumulated,
-							inputTokens: json.inputTokens, outputTokens: json.outputTokens, createdAt: new Date(),
-						}] )
-						setStreamingContent( '' ); fetchConversations()
+					if ( json.type === 'init' ) {
+						setActiveConvId( json.conversationId )
+						fetchConversations()
+					} else if ( json.type === 'text' ) {
+						accumulated += json.text
+						setStreamingContent( accumulated )
+					} else if ( json.type === 'done' ) {
+						setMessages( prev => [
+							...prev,
+							{
+								id: json.messageId,
+								role: 'assistant',
+								content: accumulated,
+								inputTokens: json.inputTokens,
+								outputTokens: json.outputTokens,
+								createdAt: new Date(),
+							},
+						] )
+						setStreamingContent( '' )
+						fetchConversations()
 					}
 				}
 			}
 		} catch ( err ) { console.error( err ) }
 		finally { setIsStreaming( false ) }
-	}
-
-	function handleKeyDown( e: React.KeyboardEvent<HTMLTextAreaElement> ) {
-		if ( e.key === 'Enter' && !e.shiftKey ) { e.preventDefault(); sendMessage() }
 	}
 
 	return (
@@ -524,15 +486,10 @@ export default function ChatPage() {
 						conversations={conversations}
 						activeConvId={activeConvId}
 						messages={messages}
-						input={input}
-						setInput={setInput}
 						isStreaming={isStreaming}
 						streamingContent={streamingContent}
 						messagesEndRef={messagesEndRef}
-						textareaRef={textareaRef}
-						sendMessage={sendMessage}
-						handleKeyDown={handleKeyDown}
-						mounted={mounted}
+						onSend={handleSend}
 					/>
 				</div>
 
@@ -540,20 +497,15 @@ export default function ChatPage() {
 					<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
 						<div className="bg-white text-black p-6 rounded-xl w-75">
 							<p className="mb-4 font-medium">Login dulu</p>
-
 							<button
-								onClick={() => {
-									setIsLoggedIn( true )
-									setShowLogin( false )
-								}}
+								onClick={() => { setIsLoggedIn( true ); setShowLogin( false ) }}
 								className="w-full px-4 py-2 bg-black text-white rounded"
 							>
-              Login
+								Login
 							</button>
 						</div>
 					</div>
 				)}
-
 			</SidebarProvider>
 		</TooltipProvider>
 	)
