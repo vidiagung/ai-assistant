@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { PromptInputBox } from '@/components/comp/ai-prompt-box'
+import { AIPromptBox } from '@/components/comp/AIPromptBox'
 import {
 	Tooltip,
 	TooltipContent,
@@ -292,7 +292,7 @@ function ChatArea( {
 
 			{/* Messages / Empty state */}
 			<ScrollArea className="flex-1">
-				<div className="max-w-3xl mx-auto px-6 py-6">
+				<div className="h-full px-6 py-6">
 					{messages.length === 0 && !isStreaming ? (
 
 						/* ── Tampilan awal: prompt box di tengah ── */
@@ -300,8 +300,8 @@ function ChatArea( {
 							<h1 className="text-[2rem] font-semibold tracking-tight text-foreground">
 								What&apos;s on your mind today?
 							</h1>
-							<div className="w-full max-w-2xl">
-								<PromptInputBox
+							<div className="w-full max-w-2xl mx-auto">
+								<AIPromptBox
 									onSend={onSend}
 									isLoading={isStreaming}
 									placeholder="Ask anything"
@@ -315,7 +315,7 @@ function ChatArea( {
 					) : (
 
 						/* ── Daftar pesan ── */
-						<div className="space-y-5">
+						<div className="max-w-3xl mx-auto space-y-5">
 							{messages.map( ( msg ) => <MessageBubble key={msg.id} msg={msg} /> )}
 							{isStreaming && (
 								<div className="flex gap-3 items-end">
@@ -345,7 +345,7 @@ function ChatArea( {
 			{( messages.length > 0 || isStreaming ) && (
 				<div className="w-full flex flex-col items-center px-6 pb-5 pt-3 shrink-0 gap-2">
 					<div className="w-full max-w-2xl">
-						<PromptInputBox
+						<AIPromptBox
 							onSend={onSend}
 							isLoading={isStreaming}
 							placeholder="Ask anything"
