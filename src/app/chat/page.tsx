@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { AIPromptBox } from '@/components/comp/AIPromptBox'
+import { CreateProjectDialog } from '@/components/comp/CreateProjectDialog'  // ← import dialog
 import {
 	Tooltip,
 	TooltipContent,
@@ -49,6 +50,12 @@ interface Conversation {
 	id: string
 	title: string
 	updatedAt: Date
+}
+
+interface Project {
+	id: string
+	name: string
+	category: string
 }
 
 /* ── Typing dots ── */
@@ -107,6 +114,8 @@ function AppSidebar( {
 	onDelete,
 	isLoggedIn,
 	setShowLogin,
+	onOpenCreateProject,  // ← prop baru
+	projects,             // ← prop baru
 }: {
 	conversations: Conversation[]
 	activeConvId: string | null
@@ -115,6 +124,8 @@ function AppSidebar( {
 	onDelete: ( id: string ) => void
 	isLoggedIn: boolean
 	setShowLogin: ( v: boolean ) => void
+	onOpenCreateProject: () => void
+	projects: Project[]
 } ) {
 	const { state } = useSidebar()
 	const isCollapsed = state === 'collapsed'
@@ -168,11 +179,22 @@ function AppSidebar( {
 					<SidebarGroupLabel>Projects</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
+							{/* ← klik tombol ini buka dialog */}
 							<SidebarMenuItem>
-								<SidebarMenuButton tooltip="New Projects">
+								<SidebarMenuButton tooltip="New Projects" onClick={onOpenCreateProject}>
 									<FolderPlus className="w-4 h-4" /><span>New Projects</span>
 								</SidebarMenuButton>
 							</SidebarMenuItem>
+
+							{/* Render project yang sudah dibuat */}
+							{projects.map( ( proj ) => (
+								<SidebarMenuItem key={proj.id}>
+									<SidebarMenuButton tooltip={proj.name}>
+										<span className="text-xs">📁</span>
+										<span className="truncate">{proj.name}</span>
+									</SidebarMenuButton>
+								</SidebarMenuItem>
+							) )}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
@@ -282,7 +304,6 @@ function ChatArea( {
 
 	return (
 		<main className="flex-1 flex flex-col overflow-hidden min-w-0">
-			{/* Header */}
 			<header className="flex items-center gap-2 px-4 py-3 shrink-0">
 				{activeConv
 					? <h1 className="text-sm font-medium truncate">{activeConv.title}</h1>
@@ -290,12 +311,9 @@ function ChatArea( {
 				}
 			</header>
 
-			{/* Messages / Empty state */}
 			<ScrollArea className="flex-1">
 				<div className="h-full px-6 py-6">
 					{messages.length === 0 && !isStreaming ? (
-
-						/* ── Tampilan awal: prompt box di tengah ── */
 						<div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] gap-10 select-none">
 							<h1 className="text-[2rem] font-semibold tracking-tight text-foreground">
 								What&apos;s on your mind today?
@@ -311,10 +329,7 @@ function ChatArea( {
 								Enter kirim · Shift+Enter baris baru
 							</p>
 						</div>
-
 					) : (
-
-						/* ── Daftar pesan ── */
 						<div className="max-w-3xl mx-auto space-y-5">
 							{messages.map( ( msg ) => <MessageBubble key={msg.id} msg={msg} /> )}
 							{isStreaming && (
@@ -336,12 +351,10 @@ function ChatArea( {
 							)}
 							<div ref={messagesEndRef} />
 						</div>
-
 					)}
 				</div>
 			</ScrollArea>
 
-			{/* ── Input bar bawah (muncul setelah ada pesan) ── */}
 			{( messages.length > 0 || isStreaming ) && (
 				<div className="w-full flex flex-col items-center px-6 pb-5 pt-3 shrink-0 gap-2">
 					<div className="w-full max-w-2xl">
@@ -370,6 +383,10 @@ export default function ChatPage() {
 	const messagesEndRef = useRef<HTMLDivElement>( null )
 	const [isLoggedIn, setIsLoggedIn] = useState( false )
 	const [showLogin, setShowLogin]   = useState( false )
+
+	// ── State untuk dialog & daftar project ──
+	const [showCreateProject, setShowCreateProject] = useState( false )
+	const [projects, setProjects] = useState<Project[]>( [] )
 
 	useEffect( () => { fetchConversations() }, [] )
 	useEffect( () => {
@@ -408,7 +425,16 @@ export default function ChatPage() {
 		fetchConversations()
 	}
 
-	/* ── Fungsi ini dipanggil oleh PromptInputBox via prop onSend ── */
+	// ── Handler saat project berhasil dibuat ──
+	function handleCreateProject( name: string, category: string ) {
+		const newProject: Project = {
+			id: `proj-${Date.now()}`,
+			name,
+			category,
+		}
+		setProjects( prev => [...prev, newProject] )
+	}
+
 	async function handleSend( userText: string ) {
 		if ( !userText.trim() || isStreaming ) return
 		setIsStreaming( true )
@@ -481,6 +507,8 @@ export default function ChatPage() {
 						onDelete={deleteConversation}
 						isLoggedIn={isLoggedIn}
 						setShowLogin={setShowLogin}
+						onOpenCreateProject={() => setShowCreateProject( true )}  // ← pass handler
+						projects={projects}  // ← pass daftar project
 					/>
 					<ChatArea
 						conversations={conversations}
@@ -493,6 +521,7 @@ export default function ChatPage() {
 					/>
 				</div>
 
+				{/* Login modal */}
 				{showLogin && (
 					<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
 						<div className="bg-white text-black p-6 rounded-xl w-75">
@@ -506,6 +535,14 @@ export default function ChatPage() {
 						</div>
 					</div>
 				)}
+
+				{/* Create Project dialog ← ditambahkan di sini */}
+				<CreateProjectDialog
+					open={showCreateProject}
+					onCloseAction={() => setShowCreateProject( false )}
+					onCreateAction={handleCreateProject}
+				/>
+
 			</SidebarProvider>
 		</TooltipProvider>
 	)
